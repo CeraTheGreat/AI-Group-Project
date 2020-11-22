@@ -1,8 +1,10 @@
 import random
-import game_logic
+import game_logic as logic
 
-monster = game_logic.Entity("Monster")
-player = game_logic.Player("Player")
+monster = logic.Entity("Monster")
+monster_ai = logic.Brain(monster)
+
+player = logic.Player("Player")
 
 while not monster.is_dead() and not player.is_dead():
     # Player turn
@@ -10,35 +12,35 @@ while not monster.is_dead() and not player.is_dead():
     action_type, power = move
 
     # Player does these to monster
-    if action_type == game_logic.MoveType.ATTACK: 
-        result = game_logic.do_action(player, monster, move)
-    if action_type == game_logic.MoveType.INTIMIDATE: 
-        result = game_logic.do_action(player, monster, move)
+    if action_type == logic.MoveType.ATTACK: 
+        result = logic.do_action(player, monster, move)
+    if action_type == logic.MoveType.INTIMIDATE: 
+        result = logic.do_action(player, monster, move)
 
     # Player does these to self
-    if action_type == game_logic.MoveType.HEAL: 
-        result = game_logic.do_action(player, player, move)
-    if action_type == game_logic.MoveType.DEFEND: 
-        result = game_logic.do_action(player, player, move)
+    if action_type == logic.MoveType.HEAL: 
+        result = logic.do_action(player, player, move)
+    if action_type == logic.MoveType.DEFEND: 
+        result = logic.do_action(player, player, move)
 
     # Print outcome of action
     print(player.name,"preformed",name,"for",result)
 
-    #monster turn
-    name,move = random.choice(list(monster.moveset.items()))
+    # Monster turn
+    name,move = monster_ai.take_turn(player)
     action_type, power = move
 
     # Player does these to monster
-    if action_type == game_logic.MoveType.ATTACK: 
-        result = game_logic.do_action(monster, player, move)
-    if action_type == game_logic.MoveType.INTIMIDATE: 
-        result = game_logic.do_action(monster, player, move)
+    if action_type == logic.MoveType.ATTACK: 
+        result = logic.do_action(monster, player, move)
+    if action_type == logic.MoveType.INTIMIDATE: 
+        result = logic.do_action(monster, player, move)
 
     # Player does these to self
-    if action_type == game_logic.MoveType.HEAL: 
-        result = game_logic.do_action(monster, monster, move)
-    if action_type == game_logic.MoveType.DEFEND: 
-        result = game_logic.do_action(monster, monster, move)
+    if action_type == logic.MoveType.HEAL: 
+        result = logic.do_action(monster, monster, move)
+    if action_type == logic.MoveType.DEFEND: 
+        result = logic.do_action(monster, monster, move)
 
     # Print outcome of action
     print(monster.name,"preformed",name,"for",result)

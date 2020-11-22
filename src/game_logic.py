@@ -4,6 +4,7 @@
 # Game logic - entity interactions and AI implimentation
 
 import enum
+import random
 
 
 # (max_health, max_intimidation, max_defense)
@@ -15,7 +16,15 @@ class MoveType(enum.Enum):
     DEFEND = 2
     INTIMIDATE = 3
 
+
+class State(enum.Enum):
+    AGGRESSIVE = 0
+    DEFENSIVE = 1
+    BALANCED = 2
+
+
 MOVES = {
+        # name : (type, power)
         "slash":(MoveType.ATTACK, 12),
         "potion":(MoveType.HEAL, 3),
         "sheild":(MoveType.DEFEND, 1),
@@ -27,7 +36,6 @@ class Stats:
         self.health = health
         self.intimidation = intimidation
         self.defense = defense
-
 
 class Entity:
     def __init__(self, name, max_stats=None):
@@ -77,12 +85,112 @@ class Entity:
 
 class Brain:
     def __init__(self, entity):
-        self.entity= entity
+        random.seed()
+        self.state = State.AGGRESSIVE
+        self.entity = entity
 
-    def take_turn(opponents):
-        # AI should go here
-        pass
+    def state_check(self, context):
+        if self.state == State.AGGRESSIVE:
+            # check context for state switches
+            # return ongoing state
+            return State.AGGRESSIVE
 
+        if self.state == State.DEFENSIVE:
+            # check context for state switches
+            # return ongoing state
+            return State.DEFENSIVE
+
+        if self.state == State.BALANCED:
+            # check context for state switches
+            # return ongoing state
+            return State.BALANCED
+
+    def state_decide(self):
+        roll = random.randint(1,100)
+
+        if self.state == State.AGGRESSIVE:
+            # 60% chance attack
+            if 0 < roll <= 60:
+                # entity attack moves
+                moves = [(x,y) for x,y in self.entity.moveset.items() if y[0] == MoveType.ATTACK]
+                return random.choice(list(moves))
+            
+            # 20% chance intimidate
+            if 60 < roll <= 80:
+                # entity intimidate moves
+                moves = [(x,y) for x,y in self.entity.moveset.items() if y[0] == MoveType.INTIMIDATE]
+                return random.choice(list(moves))
+
+            # 10% chance heal
+            if 80 < roll <= 90:
+                # entity intimidate moves
+                moves = [(x,y) for x,y in self.entity.moveset.items() if y[0] == MoveType.HEAL]
+                return random.choice(list(moves))
+
+            # 10% chance defend
+            if 90 < roll <= 100:
+                # entity intimidate moves
+                moves = [(x,y) for x,y in self.entity.moveset.items() if y[0] == MoveType.DEFEND]
+                return random.choice(list(moves))
+
+
+        if self.state == State.DEFENSIVE:
+            # 20% chance attack
+            if 0 < roll <= 20:
+                # entity attack moves
+                moves = [(x,y) for x,y in self.entity.moveset.items() if y[0] == MoveType.ATTACK]
+                return random.choice(list(moves))
+            
+            # 10% chance intimidate
+            if 20 < roll <= 30:
+                # entity intimidate moves
+                moves = [(x,y) for x,y in self.entity.moveset.items() if y[0] == MoveType.INTIMIDATE]
+                return random.choice(list(moves))
+
+            # 35% chance heal
+            if 30 < roll <= 65:
+                # entity intimidate moves
+                moves = [(x,y) for x,y in self.entity.moveset.items() if y[0] == MoveType.HEAL]
+                return random.choice(list(moves))
+
+            # 35% chance defend
+            if 65 < roll <= 100:
+                # entity intimidate moves
+                moves = [(x,y) for x,y in self.entity.moveset.items() if y[0] == MoveType.DEFEND]
+                return random.choice(list(moves))
+
+
+        if self.state == State.BALANCED:
+            # 30% chance attack
+            if 0 < roll <= 30:
+                # entity attack moves
+                moves = [(x,y) for x,y in self.entity.moveset.items() if y[0] == MoveType.ATTACK]
+                return random.choice(list(moves))
+            
+            # 20% chance intimidate
+            if 30 < roll <= 50:
+                # entity intimidate moves
+                moves = [(x,y) for x,y in self.entity.moveset.items() if y[0] == MoveType.INTIMIDATE]
+                return random.choice(list(moves))
+
+            # 30% chance heal
+            if 50 < roll <= 80:
+                # entity intimidate moves
+                moves = [(x,y) for x,y in self.entity.moveset.items() if y[0] == MoveType.HEAL]
+                return random.choice(list(moves))
+
+            # 20% chance defend
+            if 80 < roll <= 100:
+                # entity intimidate moves
+                moves = [(x,y) for x,y in self.entity.moveset.items() if y[0] == MoveType.DEFEND]
+                return random.choice(list(moves))
+
+    def take_turn(self, opponent):
+        # check action state transition
+        self.state == self.state_check(opponent)
+
+        # what move should the player take based on the current state
+        return self.state_decide()
 
 # A player has no "Brain" in the code since it is controlled by a user
 class Player(Entity):
