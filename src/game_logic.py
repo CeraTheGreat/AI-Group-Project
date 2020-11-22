@@ -5,6 +5,9 @@
 
 import enum
 import random
+import itertools
+import copy
+from operator import itemgetter
 
 
 # (max_health, max_intimidation, max_defense)
@@ -308,6 +311,98 @@ class Player(Entity):
         super().__init__(name, max_stats)
 
 
+class DumbController():
+    def __init__(self, entity):
+        self.entity = entity
+        self.entity.controller = self
+
+    def take_turn(self, opponent):
+        return (opponent, *random.choice(list([(x,y) for x,y in self.entity.moveset.items() if y[0] == MoveType.ATTACK])))
+
+
+class SearchController():
+    def __init__(self, entity, path_iter):
+        self.entity = entity
+        self.entity.controller = self
+        self.path_iter = path_iter
+
+    def take_turn(self, opponent):
+        return (opponent, *next(self.path_iter, (None,None)))
+
+
+class PathController():
+    def __init__(self, entity, path_iter=[]):
+        self.entity = entity
+        self.entity.controller = self
+        self.path_iter = iter(path_iter)
+
+    def take_turn(self, opponent):
+        next_move = next(self.path_iter, None)
+        if next_move is None:
+            self.path_iter = iter(search_optimum(self.entity, opponent))
+            next_move = next(self.path_iter, None)
+        return (opponent, *next_move)
+
+def eval_path(path, searcher, opponent):
+    s = copy.deepcopy(searcher)
+    search_ai = SearchController(s, iter(path))
+
+    o = copy.deepcopy(opponent)
+    dumb_ai = DumbController(o)
+
+    entities = [s,o]
+
+    for node in path:
+        # simulate round
+        for entity in entities:
+            # shift entity buffs each round
+            entity._defense = [0] + entity._defense[0:-1]
+            entity._intimidation = [0] + entity._intimidation[0:-1]
+
+            # use all other entities as possible targets
+            target, name, move = entity.controller.take_turn(*[e for e in entities if e is not entity])
+            action_type, power = move
+
+            # entity does these to target
+            if action_type == MoveType.ATTACK: 
+                result = do_action(entity, target, move)
+            if action_type == MoveType.INTIMIDATE: 
+                result = do_action(entity, target, move)
+
+            # entity does these to self
+            if action_type == MoveType.HEAL: 
+                result = do_action(entity, entity, move)
+            if action_type == MoveType.DEFEND: 
+                result = do_action(entity, entity, move)
+
+    # evaluate result
+    # if we killed the player, DO THAT
+    if o.health <= 0:
+        return 10000
+    # else, return mathematical fitness
+    else:
+        # check final health results
+        health_fitness = s.health - o.health
+
+        # check change in health through game
+        o_health_diff = opponent.health - o.health
+        s_health_diff = s.health - searcher.health
+
+        # combine values with weights
+        return health_fitness + (0.5 * o_health_diff) + (0.5 * s_health_diff)
+
+
+def search_optimum(searcher, opponent, depth=4):
+    # permute all possible paths
+    paths = [p for p in itertools.product(searcher.moveset.items(), repeat=4)]
+
+    # search all permutations
+    path_fitness = [(eval_path(p,searcher, opponent),p) for p in paths]
+
+    # return best path
+    return max(path_fitness,key=itemgetter(0))[1]
+
+
 def begin_game(*entities):
     # while challengers are alive
     while not [entity for entity in entities if entity.is_dead()]:
@@ -326,7 +421,7 @@ def begin_game(*entities):
             if action_type == MoveType.INTIMIDATE: 
                 result = do_action(entity, target, move)
 
-            # Player does these to self
+            # entity does these to self
             if action_type == MoveType.HEAL: 
                 result = do_action(entity, entity, move)
             if action_type == MoveType.DEFEND: 

@@ -1,5 +1,6 @@
 import random
 import game_logic as logic
+import sys
 
 
 def user_choice(entity):
@@ -23,8 +24,29 @@ def user_choice(entity):
 
 
 if __name__ == "__main__":
+    state = False
+    search = False
+
+    if len(sys.argv) == 1:
+        state = True
+    elif len(sys.argv) > 1:
+        if sys.argv[1] == '--state':
+            state = True
+        elif sys.argv[1] == '--search':
+            search = True
+        elif sys.argv[1] == '-h' or sys.argv[1] == '--help':
+            print("python user_interface.py [--state | --search | -h/--help]")
+            sys.exit(0)
+
     monster = logic.Entity("Monster")
-    monster_ai = logic.AIController(monster)
+    if state:
+        print("using state control...")
+        print()
+        monster_ai = logic.AIController(monster)
+    elif search:
+        print("using search control...")
+        print()
+        monster_ai = logic.PathController(monster)
 
     player = logic.Player("Player")
     player_controller = logic.PlayerController(player, user_choice)
