@@ -30,7 +30,7 @@ class State(enum.Enum):
 MOVES = {
         # name : (type, power)
         "slash":(MoveType.ATTACK, 10),
-        "potion":(MoveType.HEAL, 9),
+        "potion":(MoveType.HEAL, 5),
         "sheild":(MoveType.DEFEND, 4),
         "scare":(MoveType.INTIMIDATE, 3) }
 
