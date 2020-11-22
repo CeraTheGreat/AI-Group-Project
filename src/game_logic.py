@@ -8,7 +8,7 @@ import random
 
 
 # (max_health, max_intimidation, max_defense)
-DEFAULT_MAX_STATS = (100, 4, 4)
+DEFAULT_MAX_STATS = (100, 8, 8)
 BUFF_COOLDOWN = 5
 
 class MoveType(enum.Enum):
@@ -26,10 +26,10 @@ class State(enum.Enum):
 
 MOVES = {
         # name : (type, power)
-        "slash":(MoveType.ATTACK, 12),
-        "potion":(MoveType.HEAL, 3),
-        "sheild":(MoveType.DEFEND, 1),
-        "scare":(MoveType.INTIMIDATE, 1) }
+        "slash":(MoveType.ATTACK, 10),
+        "potion":(MoveType.HEAL, 9),
+        "sheild":(MoveType.DEFEND, 4),
+        "scare":(MoveType.INTIMIDATE, 3) }
 
 
 class Stats:
@@ -73,7 +73,7 @@ class Entity:
                 self.max_stats.defense)
 
     def be_hit(self, strength):
-        damage = strength - self.defense
+        damage = max(strength - self.defense, 0)
         self.health = self.health - damage
         return damage
 
@@ -102,22 +102,17 @@ class AIController():
         self.state = State.DEFENSIVE
         self.entity = entity
         self.entity.controller = self
+        self.state_edge = 7
 
-    def state_check(self, context):
-        if self.state == State.AGGRESSIVE:
-            # check context for state switches
-            # return ongoing state
+    def state_check(self, opponent):
+        health_diff = opponent.health - self.entity.health
+
+        if health_diff <= -self.state_edge:
             return State.AGGRESSIVE
-
-        if self.state == State.DEFENSIVE:
-            # check context for state switches
-            # return ongoing state
-            return State.DEFENSIVE
-
-        if self.state == State.BALANCED:
-            # check context for state switches
-            # return ongoing state
+        if -self.state_edge < health_diff < self.state_edge:
             return State.BALANCED
+        if health_diff >= self.state_edge:
+            return State.DEFENSIVE
 
     def state_decide(self, opponent):
 
@@ -182,14 +177,14 @@ class AIController():
             while True:
                 roll = random.randint(1,100)
 
-                # 20% chance attack
-                if 0 < roll <= 20:
+                # 40% chance attack
+                if 0 < roll <= 40:
                     # entity attack moves
                     moves = [(x,y) for x,y in self.entity.moveset.items() if y[0] == MoveType.ATTACK]
                     return random.choice(list(moves))
                 
                 # 10% chance intimidate
-                if 20 < roll <= 30:
+                if 40 < roll <= 50:
                     # entity intimidate moves
                     moves = [(x,y) for x,y in self.entity.moveset.items() if y[0] == MoveType.INTIMIDATE]
                     choice = random.choice(list(moves))
@@ -203,8 +198,8 @@ class AIController():
                     # if not, reroll
                         continue
 
-                # 35% chance heal
-                if 30 < roll <= 65:
+                # 40% chance heal
+                if 50 < roll <= 90:
                     # entity heal moves
                     moves = [(x,y) for x,y in self.entity.moveset.items() if y[0] == MoveType.HEAL]
                     choice = random.choice(list(moves))
@@ -219,8 +214,8 @@ class AIController():
                     else:
                         continue
 
-                # 35% chance defend
-                if 65 < roll <= 100:
+                # 10% chance defend
+                if 90 < roll <= 100:
                     # entity defend moves
                     moves = [(x,y) for x,y in self.entity.moveset.items() if y[0] == MoveType.DEFEND]
                     choice = random.choice(list(moves))
@@ -291,7 +286,7 @@ class AIController():
 
     def take_turn(self, opponent):
         # check action state transition
-        self.state == self.state_check(opponent)
+        self.state = self.state_check(opponent)
 
         # what move should the player take based on the current state
         return (opponent, *self.state_decide(opponent))
