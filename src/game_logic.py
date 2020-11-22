@@ -49,6 +49,9 @@ class Entity:
 
         self.moveset = MOVES
 
+        # we start without a controller, add one later
+        self.controller = None
+
     def __repr__(self):
         return '{}:\n\tHealth: {}/{}\n\tIntimidation: {}/{}\n\tDefense: {}/{}\n'.format(
                 self.name,
@@ -83,11 +86,12 @@ class Entity:
         return self.health <= 0
 
 
-class Brain:
+class AIController():
     def __init__(self, entity):
         random.seed()
-        self.state = State.AGGRESSIVE
+        self.state = State.DEFENSIVE
         self.entity = entity
+        self.entity.controller = self
 
     def state_check(self, context):
         if self.state == State.AGGRESSIVE:
@@ -280,14 +284,51 @@ class Brain:
         self.state == self.state_check(opponent)
 
         # what move should the player take based on the current state
-        return self.state_decide(opponent)
+        return (opponent, *self.state_decide(opponent))
 
-# A player has no "Brain" in the code since it is controlled by a user
+class PlayerController():
+    def __init__(self, entity, controller_method):
+        self.entity = entity
+        self.entity.controller = self
+        self.control = controller_method
+
+    def take_turn(self, opponent):
+        return (opponent, *self.control(self.entity))
+    
+
 class Player(Entity):
     def __init__(self, name="Player", max_stats=None):
         if max_stats is None:
             max_stats = Stats(*DEFAULT_MAX_STATS)
         super().__init__(name, max_stats)
+
+
+def begin_game(*entities):
+    # while challengers are alive
+    while not [entity for entity in entities if entity.is_dead()]:
+        for entity in entities:
+            # use all other entities as possible targets
+            target, name, move = entity.controller.take_turn(*[e for e in entities if e is not entity])
+            action_type, power = move
+
+            # entity does these to target
+            if action_type == MoveType.ATTACK: 
+                result = do_action(entity, target, move)
+            if action_type == MoveType.INTIMIDATE: 
+                result = do_action(entity, target, move)
+
+            # Player does these to self
+            if action_type == MoveType.HEAL: 
+                result = do_action(entity, entity, move)
+            if action_type == MoveType.DEFEND: 
+                result = do_action(entity, entity, move)
+
+            print(entity.name,"preformed",name,"for",result)
+
+        print()
+        print(*entities, sep="\n")
+        
+    print(*[f"{entity.name} has died" for entity in entities if entity.is_dead()], sep=", and ")
 
 
 def do_action(actor, recipient, action):
