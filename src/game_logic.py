@@ -9,6 +9,7 @@ import random
 
 # (max_health, max_intimidation, max_defense)
 DEFAULT_MAX_STATS = (100, 4, 4)
+BUFF_COOLDOWN = 5
 
 class MoveType(enum.Enum):
     ATTACK = 0
@@ -44,13 +45,22 @@ class Entity:
             max_stats = Stats(*DEFAULT_MAX_STATS)
         self.max_stats = max_stats
         self.health = self.max_stats.health
-        self.intimidation = 0
-        self.defense = 0
 
+        self._intimidation = [0] * BUFF_COOLDOWN
+        self._defense = [0] * BUFF_COOLDOWN
+        
         self.moveset = MOVES
 
         # we start without a controller, add one later
         self.controller = None
+
+    @property
+    def intimidation(self):
+        return sum(self._intimidation)
+
+    @property
+    def defense(self):
+        return sum(self._defense)
 
     def __repr__(self):
         return '{}:\n\tHealth: {}/{}\n\tIntimidation: {}/{}\n\tDefense: {}/{}\n'.format(
@@ -74,12 +84,12 @@ class Entity:
 
     def be_defended(self, strength):
         defense_amt = _cap(self.defense, strength, self.max_stats.defense, 0)
-        self.defense = self.defense + defense_amt
+        self._defense[0] = defense_amt
         return defense_amt
 
     def be_intimidated(self, strength):
         intimidate_amt = _cap(self.intimidation, strength, self.max_stats.intimidation, 0)
-        self.intimidation = self.intimidation + intimidate_amt
+        self._intimidation[0] = intimidate_amt
         return intimidate_amt
 
     def is_dead(self):
@@ -307,6 +317,10 @@ def begin_game(*entities):
     # while challengers are alive
     while not [entity for entity in entities if entity.is_dead()]:
         for entity in entities:
+            # shift entity buffs each round
+            entity._defense = [0] + entity._defense[0:-1]
+            entity._intimidation = [0] + entity._intimidation[0:-1]
+
             # use all other entities as possible targets
             target, name, move = entity.controller.take_turn(*[e for e in entities if e is not entity])
             action_type, power = move
