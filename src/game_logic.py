@@ -41,6 +41,7 @@ class Stats:
         self.intimidation = intimidation
         self.defense = defense
 
+
 class Entity:
     def __init__(self, name, max_stats=None):
         self.name = name 
@@ -175,7 +176,6 @@ class AIController():
                     else:
                         continue
 
-
         if self.state == State.DEFENSIVE:
             while True:
                 roll = random.randint(1,100)
@@ -230,7 +230,6 @@ class AIController():
                         return choice
                     else:
                         continue
-
 
         if self.state == State.BALANCED:
             while True:
@@ -294,6 +293,7 @@ class AIController():
         # what move should the player take based on the current state
         return (opponent, *self.state_decide(opponent))
 
+
 class PlayerController():
     def __init__(self, entity, controller_method):
         self.entity = entity
@@ -342,6 +342,7 @@ class PathController():
             self.path_iter = iter(search_optimum(self.entity, opponent))
             next_move = next(self.path_iter, None)
         return (opponent, *next_move)
+
 
 def eval_path(path, searcher, opponent):
     s = copy.deepcopy(searcher)
